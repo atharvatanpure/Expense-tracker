@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Expense Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --font: 'DM Sans', sans-serif;
+      --mono: 'DM Mono', monospace;
+      --bg: #f5f4f0;
+      --surface: #ffffff;
+      --surface-2: #f0efe9;
+      --border: rgba(0,0,0,0.1);
+      --border-strong: rgba(0,0,0,0.2);
+      --text: #1a1a18;
+      --text-2: #6b6b66;
+      --radius: 12px;
+      --cat-food: #e76f51;
+      --cat-transport: #2a9d8f;
+      --cat-health: #e9c46a;
+      --cat-entertainment: #8338ec;
+      --cat-shopping: #f72585;
+      --cat-housing: #4361ee;
+      --cat-other: #888780;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1a1a18;
+        --surface: #242422;
+        --surface-2: #2e2e2b;
+        --border: rgba(255,255,255,0.1);
+        --border-strong: rgba(255,255,255,0.2);
+        --text: #f0efe9;
+        --text-2: #888780;
+      }
+    }
+
+    body {
+      font-family: var(--font);
+      font-size: 14px;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2rem 1rem 4rem;
+    }
+
+    .app { max-width: 680px; margin: 0 auto; }
+
+    h1 {
+      font-size: 22px;
+      font-weight: 500;
+      margin-bottom: 1.5rem;
+      font-family: var(--mono);
+      letter-spacing: -0.02em;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 4px;
+      background: var(--surface-2);
+      border-radius: var(--radius);
+      padding: 4px;
+      margin-bottom: 1.5rem;
+    }
+    .tab {
+      flex: 1;
+      padding: 8px 0;
+      text-align: center;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--text-2);
+      border: none;
+      background: transparent;
+      font-family: var(--font);
+      transition: all 0.15s;
+    }
+    .tab.active {
+      background: var(--surface);
+      color: var(--text);
+      font-weight: 500;
+      border: 0.5px solid var(--border);
+    }
+
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 1.5rem;
+    }
+    .metric {
+      background: var(--surface-2);
+      border-radius: 8px;
+      padding: 14px 16px;
+    }
+    .metric-label {
+      font-size: 11px;
+      color: var(--text-2);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      font-family: var(--mono);
+    }
+    .metric-value {
+      font-size: 22px;
+      font-weight: 500;
+      font-family: var(--mono);
+    }
+    .metric-value.spend { color: #e76f51; }
+
+    .form-card {
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+    .form-title {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-2);
+      margin-bottom: 14px;
+      font-family: var(--mono);
+      letter-spacing: 0.06em;
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .field { display: flex; flex-direction: column; gap: 5px; }
+    .field label {
+      font-size: 11px;
+      color: var(--text-2);
+      font-family: var(--mono);
+      letter-spacing: 0.04em;
+    }
+    .field input, .field select {
+      padding: 8px 12px;
+      border: 0.5px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface-2);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .field input:focus, .field select:focus { border-color: var(--border-strong); }
+    .add-btn {
+      width: 100%;
+      padding: 10px;
+      background: var(--text);
+      color: var(--bg);
+      border: none;
+      border-radius: 8px;
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      margin-top: 4px;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .add-btn:hover { opacity: 0.85; }
+    .add-btn:active { opacity: 0.7; transform: scale(0.99); }
+
+    .section-label {
+      font-size: 11px;
+      font-family: var(--mono);
+      letter-spacing: 0.05em;
+      color: var(--text-2);
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+
+    .filter-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 1rem;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+    .filter-pill {
+      padding: 5px 12px;
+      border-radius: 20px;
+      border: 0.5px solid var(--border);
+      background: transparent;
+      color: var(--text-2);
+      font-family: var(--font);
+      font-size: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+    .filter-pill.active {
+      background: var(--text);
+      color: var(--bg);
+      border-color: transparent;
+    }
+
+    .expense-list { display: flex; flex-direction: column; gap: 6px; }
+    .expense-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      transition: border-color 0.1s;
+    }
+    .expense-item:hover { border-color: var(--border-strong); }
+    .cat-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .expense-info { flex: 1; min-width: 0; }
+    .expense-name {
+      font-size: 14px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .expense-meta {
+      font-size: 11px;
+      color: var(--text-2);
+      font-family: var(--mono);
+      margin-top: 2px;
+    }
+    .expense-amount {
+      font-family: var(--mono);
+      font-size: 15px;
+      font-weight: 500;
+      flex-shrink: 0;
+    }
+    .del-btn {
+      background: none;
+      border: none;
+      color: var(--text-2);
+      cursor: pointer;
+      font-size: 18px;
+      padding: 2px 4px;
+      opacity: 0.4;
+      transition: opacity 0.15s;
+      line-height: 1;
+    }
+    .del-btn:hover { opacity: 1; color: #e24b4a; }
+
+    .empty {
+      text-align: center;
+      padding: 3rem 0;
+      color: var(--text-2);
+      font-size: 13px;
+    }
+    .empty span { display: block; font-size: 32px; margin-bottom: 12px; opacity: 0.4; }
+
+    .chart-wrap {
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+    .chart-title {
+      font-size: 11px;
+      font-family: var(--mono);
+      letter-spacing: 0.05em;
+      color: var(--text-2);
+      margin-bottom: 1rem;
+      text-transform: uppercase;
+    }
+
+    .bar-chart { display: flex; flex-direction: column; gap: 10px; }
+    .bar-row { display: flex; align-items: center; gap: 10px; }
+    .bar-cat {
+      font-size: 12px;
+      color: var(--text-2);
+      width: 100px;
+      flex-shrink: 0;
+      font-family: var(--mono);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .bar-track {
+      flex: 1;
+      height: 22px;
+      background: var(--surface-2);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+    .bar-val {
+      font-size: 12px;
+      font-family: var(--mono);
+      color: var(--text-2);
+      width: 70px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .donut-section {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .donut-wrap { width: 160px; height: 160px; flex-shrink: 0; }
+    .legend-list { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+    .legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .legend-name { flex: 1; color: var(--text-2); }
+    .legend-pct { font-family: var(--mono); font-weight: 500; font-size: 12px; }
+
+    .monthly-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 6px;
+      height: 120px;
+      padding: 0 4px;
+    }
+    .month-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      height: 100%;
+    }
+    .month-bar-wrap { flex: 1; display: flex; align-items: flex-end; width: 100%; }
+    .month-bar { width: 100%; border-radius: 3px 3px 0 0; min-height: 2px; transition: height 0.4s ease; }
+    .month-lbl { font-size: 10px; font-family: var(--mono); color: var(--text-2); }
+
+    @media (max-width: 480px) {
+      .summary-grid { grid-template-columns: 1fr 1fr; }
+      .form-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <h1>expense tracker</h1>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('expenses', this)">Expenses</button>
+      <button class="tab" onclick="switchTab('insights', this)">Insights</button>
+    </div>
+
+    <div class="summary-grid">
+      <div class="metric">
+        <div class="metric-label">This month</div>
+        <div class="metric-value spend" id="m-total">₹0</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Transactions</div>
+        <div class="metric-value" id="m-count">0</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Top category</div>
+        <div class="metric-value" id="m-top" style="font-size:14px;padding-top:4px;">—</div>
+      </div>
+    </div>
+
+    <!-- Expenses Panel -->
+    <div id="panel-expenses" class="panel active">
+      <div class="form-card">
+        <div class="form-title">ADD EXPENSE</div>
+        <div class="form-row">
+          <div class="field">
+            <label>DESCRIPTION</label>
+            <input type="text" id="inp-desc" placeholder="e.g. Uber ride" />
+          </div>
+          <div class="field">
+            <label>AMOUNT (₹)</label>
+            <input type="number" id="inp-amt" placeholder="0.00" min="0" step="0.01" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label>CATEGORY</label>
+            <select id="inp-cat">
+              <option value="food">Food & Dining</option>
+              <option value="transport">Transport</option>
+              <option value="health">Health</option>
+              <option value="entertainment">Entertainment</option>
+              <option value="shopping">Shopping</option>
+              <option value="housing">Housing</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>DATE</label>
+            <input type="date" id="inp-date" />
+          </div>
+        </div>
+        <button class="add-btn" onclick="addExpense()">Add expense</button>
+      </div>
+
+      <div class="filter-row">
+        <button class="filter-pill active" onclick="setFilter('all', this)">All</button>
+        <button class="filter-pill" onclick="setFilter('food', this)">Food</button>
+        <button class="filter-pill" onclick="setFilter('transport', this)">Transport</button>
+        <button class="filter-pill" onclick="setFilter('health', this)">Health</button>
+        <button class="filter-pill" onclick="setFilter('entertainment', this)">Entertainment</button>
+        <button class="filter-pill" onclick="setFilter('shopping', this)">Shopping</button>
+        <button class="filter-pill" onclick="setFilter('housing', this)">Housing</button>
+        <button class="filter-pill" onclick="setFilter('other', this)">Other</button>
+      </div>
+
+      <div class="section-label">RECENT EXPENSES</div>
+      <div class="expense-list" id="expense-list"></div>
+    </div>
+
+    <!-- Insights Panel -->
+    <div id="panel-insights" class="panel">
+      <div class="chart-wrap">
+        <div class="chart-title">SPENDING BY CATEGORY</div>
+        <div class="donut-section">
+          <div class="donut-wrap"><canvas id="donut-chart" width="160" height="160"></canvas></div>
+          <div class="legend-list" id="donut-legend"></div>
+        </div>
+      </div>
+      <div class="chart-wrap">
+        <div class="chart-title">CATEGORY BREAKDOWN</div>
+        <div class="bar-chart" id="bar-chart"></div>
+      </div>
+      <div class="chart-wrap">
+        <div class="chart-title">MONTHLY TREND</div>
+        <div class="monthly-bars" id="monthly-bars"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const CAT = {
+      food:          { label: 'Food & Dining',  color: '#e76f51' },
+      transport:     { label: 'Transport',       color: '#2a9d8f' },
+      health:        { label: 'Health',          color: '#e9c46a' },
+      entertainment: { label: 'Entertainment',   color: '#8338ec' },
+      shopping:      { label: 'Shopping',        color: '#f72585' },
+      housing:       { label: 'Housing',         color: '#4361ee' },
+      other:         { label: 'Other',           color: '#888780' }
+    };
+
+    const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    let expenses = JSON.parse(localStorage.getItem('exp_data') || '[]');
+    let activeFilter = 'all';
+
+    function save() { localStorage.setItem('exp_data', JSON.stringify(expenses)); }
+
+    function fmtAmt(n) {
+      return '₹' + n.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    }
+
+    function today() { return new Date().toISOString().split('T')[0]; }
+
+    document.getElementById('inp-date').value = today();
+
+    // Seed data if empty
+    if (expenses.length === 0) {
+      expenses = [
+        { id: 1, desc: 'Swiggy order',          amount: 340,  cat: 'food',          date: today() },
+        { id: 2, desc: 'Metro card recharge',    amount: 200,  cat: 'transport',     date: today() },
+        { id: 3, desc: 'Netflix subscription',   amount: 499,  cat: 'entertainment', date: today() },
+        { id: 4, desc: 'Grocery run',            amount: 1240, cat: 'food',          date: today() },
+        { id: 5, desc: 'Pharmacy',               amount: 380,  cat: 'health',        date: today() },
+      ];
+      save();
+    }
+
+    function addExpense() {
+      const desc = document.getElementById('inp-desc').value.trim();
+      const amt  = parseFloat(document.getElementById('inp-amt').value);
+      const cat  = document.getElementById('inp-cat').value;
+      const date = document.getElementById('inp-date').value;
+      if (!desc || !amt || amt <= 0 || !date) return;
+      expenses.unshift({ id: Date.now(), desc, amount: amt, cat, date });
+      save();
+      document.getElementById('inp-desc').value = '';
+      document.getElementById('inp-amt').value  = '';
+      document.getElementById('inp-date').value = today();
+      render();
+    }
+
+    function deleteExpense(id) {
+      expenses = expenses.filter(e => e.id !== id);
+      save(); render();
+    }
+
+    function setFilter(f, el) {
+      activeFilter = f;
+      document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+      el.classList.add('active');
+      renderList();
+    }
+
+    function switchTab(tab, el) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      el.classList.add('active');
+      document.getElementById('panel-' + tab).classList.add('active');
+      if (tab === 'insights') renderInsights();
+    }
+
+    function getThisMonth() {
+      const now = new Date();
+      return expenses.filter(e => {
+        const d = new Date(e.date);
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      });
+    }
+
+    function renderSummary() {
+      const month = getThisMonth();
+      const total = month.reduce((s, e) => s + e.amount, 0);
+      document.getElementById('m-total').textContent = fmtAmt(total);
+      document.getElementById('m-count').textContent = month.length;
+      const catTotals = {};
+      month.forEach(e => { catTotals[e.cat] = (catTotals[e.cat] || 0) + e.amount; });
+      const top = Object.entries(catTotals).sort((a, b) => b[1] - a[1])[0];
+      document.getElementById('m-top').textContent = top ? CAT[top[0]].label : '—';
+    }
+
+    function renderList() {
+      const list = document.getElementById('expense-list');
+      const filtered = activeFilter === 'all'
+        ? expenses
+        : expenses.filter(e => e.cat === activeFilter);
+      if (filtered.length === 0) {
+        list.innerHTML = '<div class="empty"><span>◎</span>No expenses yet</div>';
+        return;
+      }
+      list.innerHTML = filtered.map(e => `
+        <div class="expense-item">
+          <div class="cat-dot" style="background:${CAT[e.cat].color}"></div>
+          <div class="expense-info">
+            <div class="expense-name">${e.desc}</div>
+            <div class="expense-meta">${CAT[e.cat].label} · ${e.date}</div>
+          </div>
+          <div class="expense-amount">${fmtAmt(e.amount)}</div>
+          <button class="del-btn" onclick="deleteExpense(${e.id})">×</button>
+        </div>
+      `).join('');
+    }
+
+    function renderInsights() {
+      const catTotals = {};
+      Object.keys(CAT).forEach(k => catTotals[k] = 0);
+      expenses.forEach(e => { catTotals[e.cat] = (catTotals[e.cat] || 0) + e.amount; });
+      const total  = Object.values(catTotals).reduce((s, v) => s + v, 0);
+      const sorted = Object.entries(catTotals).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
+      const maxVal = sorted.length ? sorted[0][1] : 1;
+
+      // Bar chart
+      const barChart = document.getElementById('bar-chart');
+      barChart.innerHTML = sorted.length === 0
+        ? '<div class="empty" style="padding:1.5rem 0">No data yet</div>'
+        : sorted.map(([cat, val]) => `
+          <div class="bar-row">
+            <div class="bar-cat">${CAT[cat].label}</div>
+            <div class="bar-track">
+              <div class="bar-fill" style="width:${Math.round(val/maxVal*100)}%;background:${CAT[cat].color}"></div>
+            </div>
+            <div class="bar-val">${fmtAmt(val)}</div>
+          </div>
+        `).join('');
+
+      // Legend
+      document.getElementById('donut-legend').innerHTML = sorted.map(([cat, val]) => `
+        <div class="legend-item">
+          <div class="legend-dot" style="background:${CAT[cat].color}"></div>
+          <div class="legend-name">${CAT[cat].label}</div>
+          <div class="legend-pct">${total > 0 ? Math.round(val / total * 100) : 0}%</div>
+        </div>
+      `).join('');
+
+      drawDonut(sorted, total);
+      drawMonthly();
+    }
+
+    function drawDonut(sorted, total) {
+      const canvas = document.getElementById('donut-chart');
+      const ctx = canvas.getContext('2d');
+      const cx = 80, cy = 80, r = 60, inner = 36;
+      ctx.clearRect(0, 0, 160, 160);
+      if (total === 0) {
+        ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--surface-2') || '#eee';
+        ctx.lineWidth = r - inner; ctx.stroke();
+        return;
+      }
+      let start = -Math.PI / 2;
+      sorted.forEach(([cat, val]) => {
+        const slice = (val / total) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, r, start, start + slice);
+        ctx.closePath();
+        ctx.fillStyle = CAT[cat].color;
+        ctx.fill();
+        start += slice;
+      });
+      ctx.beginPath(); ctx.arc(cx, cy, inner, 0, Math.PI * 2);
+      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--surface') || '#fff';
+      ctx.fill();
+    }
+
+    function drawMonthly() {
+      const monthlySums = {};
+      expenses.forEach(e => {
+        const d   = new Date(e.date);
+        const key = d.getFullYear() + '-' + d.getMonth();
+        monthlySums[key] = (monthlySums[key] || 0) + e.amount;
+      });
+      const now = new Date();
+      const months = [];
+      for (let i = 5; i >= 0; i--) {
+        const d   = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const key = d.getFullYear() + '-' + d.getMonth();
+        months.push({ label: MONTHS[d.getMonth()], val: monthlySums[key] || 0 });
+      }
+      const maxM = Math.max(...months.map(m => m.val), 1);
+      document.getElementById('monthly-bars').innerHTML = months.map(m => `
+        <div class="month-col">
+          <div class="month-bar-wrap">
+            <div class="month-bar" style="height:${Math.round(m.val / maxM * 100)}%;background:${m.val > 0 ? '#e76f51' : 'var(--surface-2)'}"></div>
+          </div>
+          <div class="month-lbl">${m.label}</div>
+        </div>
+      `).join('');
+    }
+
+    function render() { renderSummary(); renderList(); }
+
+    render();
+  </script>
+</body>
+</html>
